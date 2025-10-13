@@ -273,6 +273,32 @@
             border: 1px solid rgba(139, 92, 246, 0.4);
         }
 
+        /* Add this to your existing <style> block */
+        .winning-piece {
+            /* Set the base state */
+            transform: scale(1.1);
+            box-shadow: 0 0 25px 5px #facc15, inset 0 0 10px #ffffff;
+            
+            /* Apply the new pop animation */
+            animation: pop-animation 0.8s ease-in-out infinite;
+        }
+
+/* This defines the "pop" animation sequence */
+        @keyframes pop-animation {
+            0% {
+                transform: scale(1.1);
+                box-shadow: 0 0 25px 5px #facc15, inset 0 0 10px #ffffff;
+            }
+            50% {
+                transform: scale(1.2);
+                box-shadow: 0 0 35px 10px #fde047, inset 0 0 15px #ffffff;
+            }
+            100% {
+                transform: scale(1.1);
+                box-shadow: 0 0 25px 5px #facc15, inset 0 0 10px #ffffff;
+            }
+        }
+
         #modal-backdrop {
             backdrop-filter: blur(10px);
             background: rgba(0, 0, 0, 0.8);
@@ -622,123 +648,197 @@
     
     // Connect4 Game Implementation
     class Connect4Game extends Game {
-        constructor(apiBaseUrl, gameTitle) {
-            super(apiBaseUrl, gameTitle);
-            this.ROWS = 6; this.COLS = 7; this.PLAYER_1 = 1; this.PLAYER_2 = 2; this.AI_PLAYER = 2;
-            this.handleColumnClick = this.handleColumnClick.bind(this);
-            this.restartBtn.addEventListener('click', () => this.showModeSelection());
-        }
-
-        setupInteractiveGame() {
-            this.board = Array(this.ROWS).fill(null).map(() => Array(this.COLS).fill(0));
-            this.currentPlayer = this.PLAYER_1;
-            this.gameOver = false;
-            this.createBoardUI();
-            this.updateStatus();
-            this.restartBtn.classList.add('hidden');
-        }
-        
-        createBoardUI() {
-            this.resetBoardUI(); this.boardElement.classList.add('connect4-board');
-            this.boardElement.style.backgroundColor = '#1f2937'; this.boardElement.style.gap = '10px';
-            this.boardElement.style.position = 'relative';
-            this.boardElement.style.gridTemplateColumns = `repeat(${this.COLS}, 1fr)`;
-            this.boardElement.style.gridTemplateRows = `repeat(${this.ROWS}, 1fr)`;
-            const cellGrid = document.createElement('div');
-            cellGrid.style.cssText = `display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: repeat(6, 1fr); gap: 10px; position: absolute; inset: 10px;`;
-            for (let r = 0; r < this.ROWS; r++) for (let c = 0; c < this.COLS; c++) {
-                const cell = document.createElement('div');
-                cell.style.cssText = `background-color: #0d1117; border-radius: 50%; aspect-ratio: 1/1; box-shadow: inset 0 3px 5px rgba(0,0,0,0.4);`;
-                cell.dataset.row = (this.ROWS - 1) - r; cell.dataset.col = c; cellGrid.appendChild(cell);
-            }
-            const interactionLayer = document.createElement('div');
-            interactionLayer.style.cssText = `display: grid; grid-template-columns: repeat(7, 1fr); position: absolute; inset: 10px; z-index: 2;`;
-            if (this.gameMode !== 'ava') {
-                for (let c = 0; c < this.COLS; c++) {
-                    const column = document.createElement('div');
-                    column.style.cursor = 'pointer'; column.dataset.col = c;
-                    column.addEventListener('click', this.handleColumnClick);
-                    interactionLayer.appendChild(column);
-                }
-            }
-            this.boardElement.append(cellGrid, interactionLayer);
-        }
-
-        handleColumnClick(event) {
-            if (this.gameOver) return;
-            const isAiTurn = this.gameMode === 'hva' && this.currentPlayer === this.AI_PLAYER;
-            if (isAiTurn) return;
-
-            const col = parseInt(event.currentTarget.dataset.col);
-            const row = this.getNextOpenRow(col);
-            if (row !== null) this.makeMove(row, col);
-        }
-
-        makeMove(row, col) {
-            this.board[row][col] = this.currentPlayer; this.updateBoardUI(row, col, this.currentPlayer);
-            if (this.checkForWin(this.currentPlayer)) { this.endGame(`🎉 Player ${this.currentPlayer} (${this.currentPlayer === 1 ? 'Yellow' : 'Red'}) wins!`); return; }
-            if (this.isBoardFull()) { this.endGame("🤝 It's a draw!"); return; }
-            this.currentPlayer = (this.currentPlayer === this.PLAYER_1) ? this.PLAYER_2 : this.PLAYER_1;
-            this.updateStatus();
-            
-            if (this.gameMode === 'hva' && this.currentPlayer === this.AI_PLAYER && !this.gameOver) {
-                this.showThinkingIndicator(true);
-                setTimeout(() => this.aiMove(), 500);
-            }
-        }
-
-        async aiMove() {
-            try {
-                const response = await fetch(`${this.apiBaseUrl}/api/get_ai_move`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ board: this.board, difficulty: this.aiDifficulty }) });
-                const data = await response.json(); const col = data.move;
-                if (col !== null) { const row = this.getNextOpenRow(col); if (row !== null) this.makeMove(row, col); }
-            } catch (error) { this.endGame("❌ AI Server Error!"); }
-            finally { this.showThinkingIndicator(false); }
-        }
-
-        updateStatus() {
-            let statusText = `🎮 Player ${this.currentPlayer}'s Turn (${this.currentPlayer === 1 ? 'Yellow' : 'Red'})`;
-            if(this.gameMode === 'hva') {
-                statusText = (this.currentPlayer === this.PLAYER_1) ? "🎯 Your Turn (Yellow)" : "🤖 AI's Turn (Red)";
-            }
-            super.updateStatus(statusText);
-        }
-
-        animateSimulation(data) {
-            let moveIndex = 0;
-            const interval = setInterval(() => {
-                if (moveIndex >= data.moves.length) {
-                    clearInterval(interval);
-                    this.endGame("🎬 " + data.winner + " wins the simulation!");
-                    return;
-                }
-                const move = data.moves[moveIndex];
-                this.updateBoardUI(move.row, move.col, move.player);
-                this.statusElement.textContent = `🎬 Simulating... Move ${moveIndex + 1}`;
-                moveIndex++;
-            }, 300);
-        }
-
-        getNextOpenRow(col) { for (let r = 0; r < this.ROWS; r++) if (this.board[r][col] === 0) return r; return null; }
-        updateBoardUI(row, col, player) {
-            const cell = this.boardElement.querySelector(`div[data-row='${row}'][data-col='${col}']`);
-            if (cell && !cell.hasChildNodes()) {
-                const piece = document.createElement('div');
-                piece.style.cssText = `width: 100%; height: 100%; border-radius: 50%; animation: c4-drop 0.4s ease-out; box-shadow: 0 4px 6px rgba(0,0,0,0.3), inset 0 -4px 5px rgba(0,0,0,0.4);`;
-                piece.style.background = player === this.PLAYER_1 ? 'radial-gradient(circle at 30% 30%, #fBBF24, #D97706)' : 'radial-gradient(circle at 30% 30%, #EF4444, #991B1B)';
-                cell.appendChild(piece);
-                document.head.insertAdjacentHTML('beforeend', `<style>@keyframes c4-drop { from { transform: translateY(-300px); } to { transform: translateY(0); } }</style>`);
-            }
-        }
-        checkForWin(player) {
-            for (let r = 0; r < this.ROWS; r++) for (let c = 0; c < this.COLS - 3; c++) if (this.board[r].slice(c, c + 4).every(p => p === player)) return true;
-            for (let c = 0; c < this.COLS; c++) for (let r = 0; r < this.ROWS - 3; r++) if (Array.from({length: 4}, (_, i) => this.board[r+i][c]).every(p => p === player)) return true;
-            for (let r = 0; r < this.ROWS - 3; r++) for (let c = 0; c < this.COLS - 3; c++) if (Array.from({length: 4}, (_, i) => this.board[r+i][c+i]).every(p => p === player)) return true;
-            for (let r = 3; r < this.ROWS; r++) for (let c = 0; c < this.COLS - 3; c++) if (Array.from({length: 4}, (_, i) => this.board[r-i][c+i]).every(p => p === player)) return true;
-            return false;
-        }
-        isBoardFull() { return this.board[this.ROWS - 1].every(cell => cell !== 0); }
+    constructor(apiBaseUrl, gameTitle) {
+        super(apiBaseUrl, gameTitle);
+        this.ROWS = 6; this.COLS = 7; this.PLAYER_1 = 1; this.PLAYER_2 = 2; this.AI_PLAYER = 2;
+        this.handleColumnClick = this.handleColumnClick.bind(this);
+        this.restartBtn.addEventListener('click', () => this.showModeSelection());
     }
+
+    setupInteractiveGame() {
+        this.board = Array(this.ROWS).fill(null).map(() => Array(this.COLS).fill(0));
+        this.currentPlayer = this.PLAYER_1;
+        this.gameOver = false;
+        this.createBoardUI();
+        this.updateStatus();
+        this.restartBtn.classList.add('hidden');
+    }
+    
+    createBoardUI() {
+        this.resetBoardUI(); this.boardElement.classList.add('connect4-board');
+        this.boardElement.style.backgroundColor = '#1f2937'; this.boardElement.style.gap = '10px';
+        this.boardElement.style.position = 'relative';
+        this.boardElement.style.gridTemplateColumns = `repeat(${this.COLS}, 1fr)`;
+        this.boardElement.style.gridTemplateRows = `repeat(${this.ROWS}, 1fr)`;
+        const cellGrid = document.createElement('div');
+        cellGrid.style.cssText = `display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: repeat(6, 1fr); gap: 10px; position: absolute; inset: 10px;`;
+        for (let r = 0; r < this.ROWS; r++) for (let c = 0; c < this.COLS; c++) {
+            const cell = document.createElement('div');
+            cell.style.cssText = `background-color: #0d1117; border-radius: 50%; aspect-ratio: 1/1; box-shadow: inset 0 3px 5px rgba(0,0,0,0.4);`;
+            // NOTE: The visual board is upside-down from the array's perspective.
+            cell.dataset.row = (this.ROWS - 1) - r; 
+            cell.dataset.col = c; 
+            cellGrid.appendChild(cell);
+        }
+        const interactionLayer = document.createElement('div');
+        interactionLayer.style.cssText = `display: grid; grid-template-columns: repeat(7, 1fr); position: absolute; inset: 10px; z-index: 2;`;
+        if (this.gameMode !== 'ava') {
+            for (let c = 0; c < this.COLS; c++) {
+                const column = document.createElement('div');
+                column.style.cursor = 'pointer'; column.dataset.col = c;
+                column.addEventListener('click', this.handleColumnClick);
+                interactionLayer.appendChild(column);
+            }
+        }
+        this.boardElement.append(cellGrid, interactionLayer);
+    }
+
+    handleColumnClick(event) {
+        if (this.gameOver || (this.gameMode === 'hva' && this.currentPlayer === this.AI_PLAYER)) return;
+        const col = parseInt(event.currentTarget.dataset.col);
+        const row = this.getNextOpenRow(col);
+        if (row !== null) this.makeMove(row, col);
+    }
+
+    makeMove(row, col) {
+        this.board[row][col] = this.currentPlayer;
+        this.updateBoardUI(row, col, this.currentPlayer);
+
+        // NEW: Check for win and get the winning pieces' coordinates
+        const winningPieces = this.checkForWin(this.currentPlayer);
+        if (winningPieces) {
+            this.highlightWinningPieces(winningPieces); // NEW: Highlight the pieces
+            const winnerName = this.currentPlayer === this.PLAYER_1 ? 'You (Yellow)' : 'AI (Red)';
+            this.endGame(this.gameMode === 'hvh' ? `🎉 Player ${this.currentPlayer} wins!` : `🎉 ${winnerName} wins!`);
+            return;
+        }
+
+        if (this.isBoardFull()) {
+            this.endGame("🤝 It's a draw!");
+            return;
+        }
+
+        this.currentPlayer = (this.currentPlayer === this.PLAYER_1) ? this.PLAYER_2 : this.PLAYER_1;
+        this.updateStatus();
+        
+        if (this.gameMode === 'hva' && this.currentPlayer === this.AI_PLAYER && !this.gameOver) {
+            this.showThinkingIndicator(true);
+            setTimeout(() => this.aiMove(), 500);
+        }
+    }
+
+    async aiMove() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/get_ai_move`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ board: this.board, difficulty: this.aiDifficulty }) });
+            const data = await response.json();
+            const col = data.move;
+            if (col !== null) {
+                const row = this.getNextOpenRow(col);
+                if (row !== null) this.makeMove(row, col);
+            }
+        } catch (error) {
+            this.endGame("❌ AI Server Error!");
+        } finally {
+            // FIX: Only hide the thinking indicator if the game is NOT over.
+            // This stops the win message from being overwritten.
+            if (!this.gameOver) {
+                this.showThinkingIndicator(false);
+            }
+        }
+    }
+
+    updateStatus() {
+        let statusText = `🎮 Player ${this.currentPlayer}'s Turn (${this.currentPlayer === 1 ? 'Yellow' : 'Red'})`;
+        if (this.gameMode === 'hva') {
+            statusText = (this.currentPlayer === this.PLAYER_1) ? "🎯 Your Turn (Yellow)" : "🤖 AI's Turn (Red)";
+        }
+        super.updateStatus(statusText);
+    }
+    
+    // ... (animateSimulation is unchanged) ...
+    animateSimulation(data) {
+        let moveIndex = 0;
+        const interval = setInterval(() => {
+            if (moveIndex >= data.moves.length) {
+                clearInterval(interval);
+                this.endGame("🎬 " + data.winner + " wins the simulation!");
+                return;
+            }
+            const move = data.moves[moveIndex];
+            this.updateBoardUI(move.row, move.col, move.player);
+            this.statusElement.textContent = `🎬 Simulating... Move ${moveIndex + 1}`;
+            moveIndex++;
+        }, 300);
+    }
+
+    getNextOpenRow(col) { for (let r = 0; r < this.ROWS; r++) if (this.board[r][col] === 0) return r; return null; }
+    
+    updateBoardUI(row, col, player) {
+        const visualRow = (this.ROWS - 1) - row; // Convert array row to visual grid row
+        const cell = this.boardElement.querySelector(`div[data-row='${row}'][data-col='${col}']`);
+        if (cell && !cell.hasChildNodes()) {
+            const piece = document.createElement('div');
+            piece.style.cssText = `width: 100%; height: 100%; border-radius: 50%; animation: c4-drop-${visualRow} 0.4s ease-out; box-shadow: 0 4px 6px rgba(0,0,0,0.3), inset 0 -4px 5px rgba(0,0,0,0.4); transition: all 0.3s ease;`;
+            piece.style.background = player === this.PLAYER_1 ? 'radial-gradient(circle at 30% 30%, #fBBF24, #D97706)' : 'radial-gradient(circle at 30% 30%, #EF4444, #991B1B)';
+            cell.appendChild(piece);
+            
+            // Dynamic animation keyframe for realistic drop height
+            const keyframeCss = `@keyframes c4-drop-${visualRow} { from { transform: translateY(-${(visualRow + 1) * 100}%); } to { transform: translateY(0); } }`;
+            const styleElement = document.createElement('style');
+            styleElement.innerHTML = keyframeCss;
+            document.head.appendChild(styleElement);
+        }
+    }
+
+    // NEW: Function to highlight the winning pieces
+    highlightWinningPieces(pieces) {
+        pieces.forEach(p => {
+            const cell = this.boardElement.querySelector(`div[data-row='${p.r}'][data-col='${p.c}']`);
+            if (cell && cell.firstChild) {
+                cell.firstChild.classList.add('winning-piece');
+            }
+        });
+    }
+
+    // NEW: checkForWin now returns the coordinates of the winning pieces
+    checkForWin(player) {
+        // Horizontal check
+        for (let r = 0; r < this.ROWS; r++) {
+            for (let c = 0; c < this.COLS - 3; c++) {
+                if (this.board[r][c] === player && this.board[r][c+1] === player && this.board[r][c+2] === player && this.board[r][c+3] === player) {
+                    return [{r,c}, {r,c:c+1}, {r,c:c+2}, {r,c:c+3}];
+                }
+            }
+        }
+        // Vertical check
+        for (let c = 0; c < this.COLS; c++) {
+            for (let r = 0; r < this.ROWS - 3; r++) {
+                if (this.board[r][c] === player && this.board[r+1][c] === player && this.board[r+2][c] === player && this.board[r+3][c] === player) {
+                    return [{r,c}, {r:r+1,c}, {r:r+2,c}, {r:r+3,c}];
+                }
+            }
+        }
+        // Positive diagonal check
+        for (let r = 0; r < this.ROWS - 3; r++) {
+            for (let c = 0; c < this.COLS - 3; c++) {
+                if (this.board[r][c] === player && this.board[r+1][c+1] === player && this.board[r+2][c+2] === player && this.board[r+3][c+3] === player) {
+                    return [{r,c}, {r:r+1,c:c+1}, {r:r+2,c:c+2}, {r:r+3,c:c+3}];
+                }
+            }
+        }
+        // Negative diagonal check
+        for (let r = 3; r < this.ROWS; r++) {
+            for (let c = 0; c < this.COLS - 3; c++) {
+                if (this.board[r][c] === player && this.board[r-1][c+1] === player && this.board[r-2][c+2] === player && this.board[r-3][c+3] === player) {
+                    return [{r,c}, {r:r-1,c:c+1}, {r:r-2,c:c+2}, {r:r-3,c:c+3}];
+                }
+            }
+        }
+        return null; // Return null if no win
+    }
+
+    isBoardFull() { return this.board[this.ROWS - 1].every(cell => cell !== 0); }
+}
 
     // Reversi Game Implementation - FIXED WITH CORRECTED ANIMATION
     class ReversiGame extends Game {
@@ -751,7 +851,7 @@
         
         setupInteractiveGame() {
             this.board = Array(this.ROWS).fill(0).map(() => Array(this.COLS).fill(0));
-            // Correct Othello starting position
+            // Standard Othello starting position (Player 1=Black, Player 2=White)
             this.board[3][3] = this.PLAYER_2; this.board[3][4] = this.PLAYER_1;
             this.board[4][3] = this.PLAYER_1; this.board[4][4] = this.PLAYER_2;
             this.currentPlayer = this.PLAYER_1;
@@ -780,7 +880,7 @@
                     this.boardElement.appendChild(cell);
                     
                     if (this.board[r][c] !== 0) {
-                        this.placePiece(r, c, this.board[r][c]);
+                        this.placePiece(r, c, this.board[r][c], false); // No animation on setup
                     }
                 }
             }
@@ -807,18 +907,19 @@
                 
                 if (data.is_valid && data.flipped && data.flipped.length > 0) {
                     this.board[row][col] = this.currentPlayer;
-                    this.placePiece(row, col, this.currentPlayer);
+                    this.placePiece(row, col, this.currentPlayer, true); // Animate new piece
                     
-                    // Animate flipping pieces
-                    data.flipped.forEach(([r_f, c_f]) => {
+                    data.flipped.forEach(([r_f, c_f], index) => {
                         this.board[r_f][c_f] = this.currentPlayer;
-                        setTimeout(() => this.flipPiece(r_f, c_f), 100);
+                        // Stagger the flip animation for a better visual effect
+                        setTimeout(() => this.flipPiece(r_f, c_f), 100 + index * 50);
                     });
                     
+                    // Wait for the last flip animation to start before switching players
+                    await new Promise(resolve => setTimeout(resolve, 100 + data.flipped.length * 50));
                     await this.switchPlayer();
                 }
             } catch (e) { 
-                console.error('Move validation failed:', e);
                 this.endGame("❌ Validation Server Error!"); 
             }
         }
@@ -838,7 +939,8 @@
             
             if (current_player_moves.length === 0) {
                 this.updateStatus(`⏭️ ${this.currentPlayer === 1 ? 'Black' : 'White'} must pass!`);
-                setTimeout(async () => { await this.switchPlayer(); }, 1500);
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                await this.switchPlayer(); // Recursive call to switch again
                 return;
             }
             
@@ -863,117 +965,61 @@
                     const [row, col] = data.move; 
                     await this.makeMove(row, col); 
                 } else { 
+                    // AI must pass
                     await this.switchPlayer(); 
                 }
             } catch (error) { 
-                console.error('AI move failed:', error);
                 this.endGame("❌ AI Server Error!"); 
             } finally { 
                 this.showThinkingIndicator(false); 
             }
         }
         
-        // CORRECTED AI vs AI Animation
+        // --- IMPROVED AI vs AI SIMULATION ANIMATION ---
         animateSimulation(data) {
-            console.log('Starting Reversi animation with', data.moves.length, 'moves');
-            
-            // Clear any existing pieces and hints
-            this.removeHints();
-            const allCells = this.boardElement.querySelectorAll('div[data-row]');
-            allCells.forEach(cell => {
-                const piece = cell.querySelector('.game-piece');
-                if (piece) piece.remove();
-            });
-            
-            // Start with correct initial position
-            this.board = Array(this.ROWS).fill(0).map(() => Array(this.COLS).fill(0));
-            this.board[3][3] = this.PLAYER_2; // White
-            this.board[3][4] = this.PLAYER_1; // Black
-            this.board[4][3] = this.PLAYER_1; // Black
-            this.board[4][4] = this.PLAYER_2; // White
-            
-            // Place initial pieces
-            this.placePiece(3, 3, this.PLAYER_2);
-            this.placePiece(3, 4, this.PLAYER_1);
-            this.placePiece(4, 3, this.PLAYER_1);
-            this.placePiece(4, 4, this.PLAYER_2);
+            this.createBoardUI(); // Reset UI to starting position
             
             let moveIndex = 0;
-            
-            const animationInterval = setInterval(() => {
+            const animateNextMove = () => {
                 if (moveIndex >= data.moves.length) {
-                    clearInterval(animationInterval);
-                    
-                    // Ensure final board state is displayed correctly
-                    if (data.moves.length > 0) {
-                        const finalMove = data.moves[data.moves.length - 1];
-                        if (finalMove.board_after) {
-                            this.board = finalMove.board_after.map(row => row.slice());
-                            
-                            // Sync UI with final board state
-                            for (let r = 0; r < this.ROWS; r++) {
-                                for (let c = 0; c < this.COLS; c++) {
-                                    const cell = this.boardElement.querySelector(`div[data-row='${r}'][data-col='${c}']`);
-                                    const existingPiece = cell.querySelector('.game-piece');
-                                    
-                                    if (this.board[r][c] !== 0 && !existingPiece) {
-                                        this.placePiece(r, c, this.board[r][c]);
-                                    } else if (this.board[r][c] === 0 && existingPiece) {
-                                        existingPiece.remove();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Show final result with correct score format
-                    const finalScore = data.final_score || { 1: 0, 2: 0 };
-                    this.endGame(`🎬 Simulation Complete! ${data.winner} - Black: ${finalScore[1]}, White: ${finalScore[2]}`);
+                    // Final state after all moves are animated
+                    const finalScore = data.final_score || { '1': 0, '2': 0 };
+                    this.endGame(`🎬 Simulation Complete! ${data.winner} - Black: ${finalScore[this.PLAYER_1]}, White: ${finalScore[this.PLAYER_2]}`);
                     return;
                 }
                 
                 const move = data.moves[moveIndex];
-                console.log(`Animating move ${moveIndex + 1}:`, move);
+                const playerName = move.player === 1 ? 'Black' : 'White';
+                this.updateStatus(`🎬 ${playerName} moves to (${move.row}, ${move.col}). Move ${moveIndex + 1}/${data.moves.length}`);
                 
-                // Place the new piece with animation
-                this.placePiece(move.row, move.col, move.player);
+                // Place the new piece
+                this.placePiece(move.row, move.col, move.player, true);
                 
-                // Animate flipped pieces with staggered timing
+                // Flip captured pieces with a delay
                 if (move.flipped && move.flipped.length > 0) {
                     move.flipped.forEach(([r, c], index) => {
-                        setTimeout(() => {
-                            this.flipPiece(r, c);
-                        }, 100 + (index * 50)); // Stagger flips for better visual effect
+                        setTimeout(() => this.flipPiece(r, c), 100 + index * 50);
                     });
                 }
-                
-                // Update internal board state
-                if (move.board_after) {
-                    this.board = move.board_after.map(row => row.slice());
-                }
-                
-                // Update status with move information
-                const playerName = move.player === 1 ? 'Black' : 'White';
-                this.statusElement.textContent = `🎬 ${playerName} played (${String.fromCharCode(65 + move.col)}${move.row + 1}). Move ${moveIndex + 1}/${data.moves.length}`;
+
+                // Update internal board state for next move
+                this.board = move.board_after.map(row => row.slice());
                 
                 moveIndex++;
-            }, 1200); // Slower animation for better visibility
+                // Schedule the next move animation
+                setTimeout(animateNextMove, 800); 
+            };
+            
+            animateNextMove(); // Start the animation loop
         }
         
         updateStatus(statusMessageOverride) {
             if (this.gameOver) return;
             const scores = this.calculateScores();
-            let turnInfo;
-            
-            if (statusMessageOverride) {
-                turnInfo = statusMessageOverride;
-            } else {
-                turnInfo = `🎯 Turn: ${this.currentPlayer === 1 ? 'Black' : 'White'}`;
-                if (this.gameMode === 'hva') {
-                    turnInfo = `🎯 Turn: ${this.currentPlayer === 1 ? 'You (Black)' : 'AI (White)'}`;
-                }
+            let turnInfo = statusMessageOverride || `🎯 Turn: ${this.currentPlayer === 1 ? 'Black' : 'White'}`;
+            if (!statusMessageOverride && this.gameMode === 'hva') {
+                turnInfo = `🎯 Turn: ${this.currentPlayer === 1 ? 'You (Black)' : 'AI (White)'}`;
             }
-            
             const fullStatusText = `⚫ Black: ${scores.p1} - ⚪ White: ${scores.p2} | ${turnInfo}`;
             super.updateStatus(fullStatusText);
             this.showHints();
@@ -988,15 +1034,12 @@
                 }); 
                 const result = await response.json();
                 return result.moves || []; 
-            } catch (e) { 
-                console.error('Failed to get valid moves:', e);
-                return []; 
-            } 
+            } catch (e) { return []; } 
         }
         
         async showHints() { 
             this.removeHints(); 
-            if (this.gameMode !== 'hvh' && this.currentPlayer === this.AI_PLAYER) return; 
+            if ((this.gameMode === 'hva' && this.currentPlayer === this.AI_PLAYER) || this.gameOver) return;
             
             const validMoves = await this.getValidMoves(this.currentPlayer); 
             validMoves.forEach(([r, c]) => { 
@@ -1006,7 +1049,6 @@
                     hint.className = 'hint';
                     hint.style.cssText = `width: 40%; height: 40%; border-radius: 50%; background-color: rgba(139, 92, 246, 0.5); animation: pulse-hint 1.5s infinite;`; 
                     cell.appendChild(hint); 
-                    
                     if (!document.querySelector('#hint-style')) {
                         document.head.insertAdjacentHTML('beforeend', `<style id="hint-style">@keyframes pulse-hint { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }</style>`);
                     }
@@ -1014,47 +1056,51 @@
             }); 
         }
         
-        removeHints() { 
-            this.boardElement.querySelectorAll(".hint").forEach(h => h.remove()); 
-        }
+        removeHints() { this.boardElement.querySelectorAll(".hint").forEach(h => h.remove()); }
         
-        placePiece(r, c, player) { 
+        placePiece(r, c, player, withAnimation) { 
             const cell = this.boardElement.querySelector(`div[data-row='${r}'][data-col='${c}']`); 
-            if (cell && !cell.querySelector(".game-piece")) { 
-                const piece = document.createElement('div'); 
-                piece.className = 'game-piece';
-                piece.style.cssText = `width: 85%; height: 85%; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.5); transform-style: preserve-3d; transition: transform 0.6s;`; 
-                
-                const front = document.createElement('div'); 
-                front.style.cssText = `position: absolute; width: 100%; height: 100%; border-radius: 50%; backface-visibility: hidden; background: ${player === 1 ? 'radial-gradient(circle, #444, #000)' : 'radial-gradient(circle, #fff, #ccc)'};`; 
-                
-                const back = document.createElement('div'); 
-                back.style.cssText = `position: absolute; width: 100%; height: 100%; border-radius: 50%; backface-visibility: hidden; transform: rotateY(180deg); background: ${player === 1 ? 'radial-gradient(circle, #fff, #ccc)' : 'radial-gradient(circle, #444, #000)'};`; 
-                
-                piece.append(front, back); 
-                cell.appendChild(piece); 
-            } 
+            if (!cell || cell.querySelector(".game-piece")) return;
+
+            const piece = document.createElement('div'); 
+            piece.className = 'game-piece';
+            piece.style.cssText = `width: 85%; height: 85%; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.5); transform-style: preserve-3d; transition: transform 0.6s, opacity 0.4s; opacity: 0;`;
+            
+            const front = document.createElement('div'); 
+            front.style.cssText = `position: absolute; width: 100%; height: 100%; border-radius: 50%; backface-visibility: hidden; background: ${player === 1 ? 'radial-gradient(circle, #444, #000)' : 'radial-gradient(circle, #fff, #ccc)'};`; 
+            
+            const back = document.createElement('div'); 
+            back.style.cssText = `position: absolute; width: 100%; height: 100%; border-radius: 50%; backface-visibility: hidden; transform: rotateY(180deg); background: ${player === 1 ? 'radial-gradient(circle, #fff, #ccc)' : 'radial-gradient(circle, #444, #000)'};`; 
+            
+            piece.append(front, back); 
+            cell.appendChild(piece);
+
+            if (withAnimation) {
+                setTimeout(() => piece.style.opacity = '1', 50); // Fade-in effect
+            } else {
+                piece.style.opacity = '1';
+            }
         }
         
         flipPiece(r, c) { 
             const piece = this.boardElement.querySelector(`div[data-row='${r}'][data-col='${c}'] .game-piece`); 
             if (piece) {
-                piece.style.transform = piece.style.transform === 'rotateY(180deg)' ? '' : 'rotateY(180deg)'; 
+                const isFlipped = piece.style.transform.includes('180deg');
+                piece.style.transform = isFlipped ? '' : 'rotateY(180deg)';
             }
         }
         
         calculateScores() { 
-            let p1 = 0, p2 = 0; 
-            this.board.forEach(row => row.forEach(cell => { 
-                if (cell === 1) p1++; 
-                if (cell === 2) p2++; 
-            })); 
-            return {p1, p2}; 
+            return {
+                p1: this.board.flat().filter(p => p === 1).length,
+                p2: this.board.flat().filter(p => p === 2).length
+            };
         }
         
         determineWinner() { 
-            const scores = this.calculateScores(); 
-            this.endGame(`🏁 Game Over! ⚫ Black: ${scores.p1} - ⚪ White: ${scores.p2}. ${scores.p1 > scores.p2 ? '🎉 Black wins!' : scores.p2 > scores.p1 ? '🎉 White wins!' : "🤝 It's a draw!"}`); 
+            const scores = this.calculateScores();
+            const winnerMsg = scores.p1 > scores.p2 ? '🎉 Black wins!' : scores.p2 > scores.p1 ? '🎉 White wins!' : "🤝 It's a draw!";
+            this.endGame(`🏁 Game Over! ⚫ Black: ${scores.p1} - ⚪ White: ${scores.p2}. ${winnerMsg}`); 
         }
     }
 

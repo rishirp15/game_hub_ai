@@ -271,8 +271,6 @@ def api_get_valid_moves():
 def ai_vs_ai_simulation():
     """Fixed AI vs AI simulation with proper game progression."""
     try:
-        print("Starting AI vs AI simulation...")
-        
         game = ReversiGame()  # Start with standard setup
         ai_black = AI(BLACK, 'medium')
         ai_white = AI(WHITE, 'medium')
@@ -281,36 +279,23 @@ def ai_vs_ai_simulation():
         consecutive_passes = 0
         move_count = 0
         max_moves = 60  # Safety limit
-        
-        print("Initial board:")
-        game.print_board()
-        
+
         while not game.is_game_over() and move_count < max_moves and consecutive_passes < 2:
-            print(f"Move {move_count + 1}: {('Black' if current_player == BLACK else 'White')} to play")
-            
             valid_moves = game.get_valid_moves(current_player)
-            print(f"Valid moves: {valid_moves}")
             
             if not valid_moves:
-                print(f"{('Black' if current_player == BLACK else 'White')} must pass")
                 consecutive_passes += 1
                 current_player = WHITE if current_player == BLACK else BLACK
                 continue
             
-            consecutive_passes = 0  # Reset pass counter when a move is made
+            consecutive_passes = 0
             
             ai = ai_black if current_player == BLACK else ai_white
             move = ai.get_best_move(game)
             
             if move:
                 r, c = move
-                print(f"AI chooses: ({r}, {c})")
-                
-                # Get tiles that will be flipped
                 flipped = game.get_tiles_to_flip(r, c, current_player)
-                print(f"Will flip: {flipped}")
-                
-                # Make the move
                 new_game = game.make_move(r, c, current_player)
                 
                 if new_game:
@@ -320,36 +305,25 @@ def ai_vs_ai_simulation():
                         'col': c, 
                         'player': current_player,
                         'flipped': flipped, 
-                        'board_after': [row[:] for row in game.board]  # Deep copy
+                        'board_after': [row[:] for row in game.board] # Deep copy
                     })
-                    
-                    print(f"Board after move:")
-                    game.print_board()
-                    
                     move_count += 1
                 else:
-                    print(f"Invalid move returned by AI: ({r}, {c})")
+                    # AI returned an invalid move, break the loop
                     break
             else:
-                print("AI returned no move")
+                # AI failed to return a move, break
                 break
             
-            # Switch players
             current_player = WHITE if current_player == BLACK else BLACK
         
         # Determine winner
         final_score = game.get_score()
-        print(f"Final score - Black: {final_score[BLACK]}, White: {final_score[WHITE]}")
-        
+        winner = "Draw"
         if final_score[BLACK] > final_score[WHITE]:
             winner = "AI 1 (Black)"
         elif final_score[WHITE] > final_score[BLACK]:
             winner = "AI 2 (White)"
-        else:
-            winner = "Draw"
-        
-        print(f"Winner: {winner}")
-        print(f"Total moves: {len(moves_history)}")
         
         return jsonify({
             'moves': moves_history,
@@ -359,7 +333,6 @@ def ai_vs_ai_simulation():
         })
         
     except Exception as e:
-        print(f"Simulation error: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': f'Simulation failed: {str(e)}'}), 500
