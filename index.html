@@ -238,6 +238,25 @@
             .icon { display: none; }
             .game-card:hover { transform: translateY(-5px); }
         }
+
+        @media (max-width: 768px) {
+            #game-select-modal {
+                padding: 1.5rem; /* Reduces padding on mobile */
+                max-height: 90vh; /* Prevents modal from being too tall */
+                overflow-y: auto; /* Adds scrolling if needed */
+            }
+
+            #game-select-modal > div.grid {
+                grid-template-columns: 1fr; /* Forces a single-column layout */
+                gap: 1.5rem; /* Reduces the space between cards */
+            }
+
+            #game-select-modal h2 {
+                font-size: 1.875rem; /* Makes the "Choose Your Challenge" title smaller */
+                line-height: 2.25rem;
+                margin-bottom: 2rem;
+            }
+        }
     </style>
 </head>
 <body class="text-gray-200">
