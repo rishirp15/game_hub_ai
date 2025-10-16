@@ -1,145 +1,117 @@
-### 🎮 AI Game Hub
+# 🎮 AI Game Hub
 
-An interactive, web-based platform showcasing three classic strategy games powered by distinct and powerful AI algorithms. This project provides a hands-on experience with Minimax, Alpha-Beta Pruning, and Q-Learning through engaging, responsive gameplay.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
------
+An interactive, web-based platform designed to demonstrate and compare three distinct Artificial Intelligence paradigms through classic strategy games. This project is pre-configured for easy, one-click deployment on Vercel.
+
+---
 
 ### ✨ Key Features
 
------
+* 🎲 **Three Classic Games:** Play Connect 4, Othello (Reversi), and Nim.
+* 🤖 **Three Distinct AI Opponents:** Challenge unique AI agents built with Minimax, Advanced Heuristics, and Q-Learning.
+* 🕹️ **Multiple Game Modes:** Choose between Human vs. AI, Human vs. Human, or watch an AI vs. AI simulation.
+* 📶 **Variable Difficulty:** Adjust the AI's skill level (Easy, Medium, Hard).
+* 🎨 **Modern & Responsive UI:** A clean, intuitive interface built with TailwindCSS.
+* ☁️ **Ready for Deployment:** Pre-configured for easy deployment as a serverless application on Vercel.
 
-  * 🎲 **Three Classic Games:** Play Connect 4, Othello (Reversi), and Nim.
-  * 🤖 **Diverse AI Opponents:** Challenge three unique AI agents, each built with a different algorithm.
-  * 🕹️ **Multiple Game Modes:**
-      * Human vs. AI
-      * Human vs. Human
-      * AI vs. AI Simulation
-  * 📶 **Variable Difficulty:** Adjust the AI's skill level (Easy, Medium, Hard).
-  * 🎨 **Modern & Responsive UI:** A clean, intuitive, and mobile-friendly interface.
-
------
+---
 
 ### 🎯 Featured Games & AI Algorithms
 
------
+| Game                 | AI Algorithm Implemented            | Type of AI                          |
+| -------------------- | ----------------------------------- | ----------------------------------- |
+| **🔗 Connect 4** | Minimax with Alpha-Beta Pruning     | **Classical Search Algorithm** |
+| **⚫ Othello (Reversi)**| Minimax with Advanced Heuristics    | **Expert System / Heuristic-Driven**|
+| **🥢 Nim** | Q-Learning                          | **Reinforcement Learning** |
 
-**🔗 Connect 4**
-
-  * **AI Algorithm:** Minimax with Alpha-Beta Pruning
-  * **Description:** A classic search algorithm that finds the optimal move by exploring a limited-depth game tree efficiently.
-
-**⚫ Othello (Reversi)**
-
-  * **AI Algorithm:** Advanced Heuristic Minimax
-  * **Description:** A sophisticated Minimax AI that uses positional weights and mobility analysis to make strategic decisions.
-
-**🥢 Nim (Sticks & Stones)**
-
-  * **AI Algorithm:** Q-Learning (Reinforcement Learning)
-  * **Description:** An AI that learns the unbeatable mathematical strategy from scratch by playing thousands of simulated games.
-
------
+---
 
 ### 🛠️ Technology Stack
 
------
+* **🖥️ Frontend:** HTML5, Tailwind CSS, JavaScript (ES6+)
+* **🐍 Backend:** Python 3, Flask
+* **☁️ Deployment:** Vercel (as a Serverless Function)
+* **🧠 AI Algorithms:** Implemented from scratch with no external ML libraries.
 
-  * **🖥️ Frontend:** HTML5, CSS3, Tailwind CSS, JavaScript (ES6+)
-  * **🐍 Backend:** Python 3, Flask
-  * **🧠 AI Algorithms:** Implemented from scratch with no external ML libraries.
-
------
+---
 
 ### 🚀 Getting Started
 
------
+You can either run this project on your local machine for development or deploy it directly to the web via Vercel.
 
-Follow these steps to get the project running on your local machine.
+#### **Option 1: Deploying to Vercel (Recommended)**
+
+This is the easiest way to get the project running.
+
+1.  **Push to GitHub:** Make sure your entire project, including the `vercel.json` and `requirements.txt` files, is in a GitHub repository.
+2.  **Import to Vercel:**
+    * Go to your Vercel dashboard and click "Add New..." -> "Project".
+    * Import the GitHub repository.
+    * Vercel will automatically detect the `vercel.json` configuration. No changes are needed.
+3.  **Deploy:** Click the "Deploy" button. Your AI Game Hub will be live on a public URL in minutes!
+
+#### **Option 2: Running Locally**
 
 **📋 Prerequisites:**
 
-  * Python 3.8 or newer.
-  * `pip` for installing Python packages.
-  * A modern web browser (Chrome, Firefox, Edge, etc.).
+* Python 3.8 or newer.
+* `pip` for installing Python packages.
+* A modern web browser.
+* (Recommended) VS Code with the "Live Server" extension.
 
 **⚙️ Installation & Setup:**
 
-**1. Clone the Repository**
-
-```
-git clone https://github.com/your-username/ai-game-hub.git
-cd ai-game-hub
-```
-
-**2. Install Python Dependencies**
-
-```
-pip install -r requirements.txt
-```
-
-**3. Start the Backend Servers**
-This project requires **three separate terminals** to run all game servers concurrently.
-
-  * **Terminal 1 (Connect 4):**
-    ```
-    python connect4_backend.py
-    ```
-  * **Terminal 2 (Othello/Reversi):**
-    ```
-    python reversi_backend.py
-    ```
-  * **Terminal 3 (Nim):**
-    ```
-    python nim_backend.py
+1.  **Clone the Repository**
+    ```bash
+    git clone [https://github.com/your-username/ai-game-hub.git](https://github.com/your-username/ai-game-hub.git)
+    cd ai-game-hub
     ```
 
-**4. Launch the Frontend**
-With all servers running, open `index.html` in your browser. For the best experience, serve it locally:
+2.  **Install Python Dependencies**
+    It's highly recommended to use a virtual environment.
+    ```bash
+    # Create and activate a virtual environment (optional but good practice)
+    python -m venv venv
+    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
 
-  * Open a **fourth terminal** and run:
+    # Install packages
+    pip install -r requirements.txt
     ```
-    python -m http.server 8000
+
+3.  **Start the Backend Server**
+    Run the single, merged Flask application.
+    ```bash
+    flask --app api/index run
     ```
-  * Navigate to `http://localhost:8000` in your browser.
+    The backend server will start, typically on `http://127.0.0.1:5000`.
 
------
+4.  **Launch the Frontend**
+    Open `index.html` in your browser. For the best experience (to avoid potential CORS issues), use a local server. If you have VS Code, you can right-click `index.html` and select "Open with Live Server".
 
-### 🎮 How to Play
-
------
-
-1.  Open the `index.html` file in your browser.
-2.  Click "Play Now" to open the game selection modal.
-3.  Choose between Connect 4, Othello, or Nim.
-4.  Select your desired game mode and AI difficulty.
-5.  Enjoy the game\!
-
------
+---
 
 ### 📁 File Structure
 
------
+The project is structured for Vercel's serverless environment.
 
-  * 📄 `index.html` - Main frontend file with all UI, CSS, and JS
-  * 🐍 `connect4_backend.py` - Flask server & Minimax AI for Connect 4
-  * 🐍 `reversi_backend.py` - Flask server & Heuristic AI for Othello
-  * 🐍 `nim_backend.py` - Flask server & Q-Learning AI for Nim
-  * 📄 `requirements.txt` - Python dependencies
-  * 💾 `q_table_nim.json` - Auto-generated file storing the trained Nim AI model
-  * 📖 `README.md` - You are here\!
+* 📄 `index.html` - The single-page application containing all UI, CSS, and JS.
+* `api/`
+    * 🐍 `index.py` - The unified Flask server that contains the logic for all three games.
+* 📄 `requirements.txt` - A list of Python dependencies for Vercel to install.
+* 📄 `vercel.json` - Configuration file that tells Vercel how to build and route the project.
+* 💾 `q_table_nim.json` - The pre-trained "brain" for the Nim AI. It must be present for the Nim game to work instantly.
 
------
+---
 
 ### 🤔 Troubleshooting
 
------
+* **"AI Server Error" in game:** If running locally, ensure the single `flask --app api/index run` command is active and did not crash. Check the terminal for any Python errors.
+* **Games not loading locally:**
+    * Make sure port 5000 is not being used by another application.
+    * Check your browser's developer console (F12) for any `Network` errors. The frontend must be able to reach `http://127.0.0.1:5000`.
+* **Nim AI slow on first run (if `q_table_nim.json` is deleted):** This is expected. The AI is training itself by playing 100,000 games. This only happens once. Subsequent runs will be instant as it will load from the generated file.
 
-  * **"AI Server Error" in game:** Ensure all three Python backend scripts are running in their separate terminals.
-  * **Games not loading:**
-      * Make sure ports 5000, 5002, and 5003 are not being used by other applications.
-      * Check your browser's developer console (F12) for any `CORS` or `Network` errors.
-  * **Nim AI slow on first run:** This is expected. The AI is training itself. Subsequent runs will be instant.
+---
 
------
-
-Ready to challenge the AI? Fire up the servers and let the games begin\! 🤖
+Ready to challenge the AI? Deploy to Vercel or fire it up locally and let the games begin! 🤖
